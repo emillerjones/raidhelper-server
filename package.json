@@ -1,0 +1,34 @@
+{
+  "name": "raidhelper-server",
+  "version": "1.0.0",
+  "description": "RaidHelper - Server Repo\r //EMJ Initial set up\r Git Hub - Create Repo\r cd raidhelper-server\r npm init -y\r npm install express cors pg dotenv\r npm install --save-dev nodemon",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "node --watch --env-file=.env server.js",
+    "db:schema": "node --env-file=.env -e \"import('child_process').then(({execSync})=>execSync('psql -f db/schema.sql \\\"' + process.env.DATABASE_URL + '\\\"', {stdio:'inherit'}))\"",
+    "db:reset": "npm run db:schema"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emillerjones/raidhelper-server.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/emillerjones/raidhelper-server/issues"
+  },
+  "homepage": "https://github.com/emillerjones/raidhelper-server#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
