@@ -39,8 +39,14 @@ export async function upsertRaidHelperEvent(raid) {
       raw_json = EXCLUDED.raw_json,
       updated_at = NOW(),
       raid_leader = EXCLUDED.raid_leader
-    RETURNING *;
+    RETURNING *, (xmax = 0) AS inserted;
   `;
+  // (xmax = 0) is a Postgres trick for telling INSERT apart from UPDATE in a
+  // single upsert statement: xmax is the id of the transaction that last
+  // deleted/updated a row version. A row that was just freshly inserted by
+  // this command has xmax = 0 (untouched), so "inserted" comes back true.
+  // If the ON CONFLICT branch fired instead (an existing row got updated),
+  // xmax is set to the current transaction, so "inserted" comes back false.
 
   const { rows } = await db.query(sql, [
     raid.eventId,
@@ -61,7 +67,11 @@ export async function upsertRaidHelperEvent(raid) {
     raid.raidLeader
   ]);
 
-  return rows[0];
+  const row = rows[0];
+  return {
+    ...row,
+    wasInserted: row.inserted === true,
+  };
 }
 
 

@@ -21,15 +21,25 @@ router.post("/import",  async (req, res, next) => {
     const raids = req.body;
 
     const importedRaids = [];
+    let insertedCount = 0;
+    let updatedCount = 0;
 
     for (const raid of raids) {
       const importedRaid = await upsertRaidHelperEvent(raid);
       importedRaids.push(importedRaid);
+
+      if (importedRaid.wasInserted) {
+        insertedCount += 1;
+      } else {
+        updatedCount += 1;
+      }
     }
 
     res.send({
       message: "Raid import saved",
       count: importedRaids.length,
+      inserted: insertedCount,
+      updated: updatedCount,
       raids: importedRaids,
     });
   } catch (err) {
@@ -39,7 +49,6 @@ router.post("/import",  async (req, res, next) => {
 
 router.get("/imported",  async (req, res, next) => {
   try {
-    // console.log("Logged in user:", req.user.user_id);
     const raids = await getRaidHelperEvents();
     console.log("Raids found:", raids.length);
     res.send(raids);
