@@ -58,6 +58,31 @@ router.get("/imported",  async (req, res, next) => {
 });
 
 
+router.get("/stats", async (req, res, next) => {
+  try {
+    const events = await getRaidHelperEvents();
 
+    const guildMap = new Map();
+
+    for (const event of events) {
+      if (!guildMap.has(event.guild_id)) {
+        guildMap.set(event.guild_id, {
+          guild_id: event.guild_id,
+          guild_name: event.guild_name,
+          guild_icon_url: event.guild_icon_url,
+          raids: [],
+        });
+      }
+
+      guildMap.get(event.guild_id).raids.push(event);
+    }
+
+    const groupedEvents = [...guildMap.values()];
+
+    res.json(groupedEvents);
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default router;
