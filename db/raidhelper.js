@@ -86,3 +86,18 @@ export async function getRaidHelperEvents() {
 
   return rows;
 }
+
+export async function getStatsByWeekDay() {
+  const { rows } = await db.query(
+    `
+    SELECT
+      TRIM(TO_CHAR(start_time, 'Day')) AS day_of_week,
+      COUNT(*) AS event_count
+    FROM raidhelper_events
+    GROUP BY EXTRACT(DOW FROM start_time), TRIM(TO_CHAR(start_time, 'Day'))
+    ORDER BY EXTRACT(DOW FROM start_time);
+    `
+  );
+
+  return rows;
+}

@@ -1,7 +1,7 @@
 import express from "express";
 const router = express.Router();
 
-import { upsertRaidHelperEvent, getRaidHelperEvents } from "../db/raidhelper.js";
+import { upsertRaidHelperEvent, getRaidHelperEvents, getStatsByWeekDay } from "../db/raidhelper.js";
 
 router.get("/events",  async (req, res, next) => {
   try {
@@ -61,9 +61,7 @@ router.get("/imported",  async (req, res, next) => {
 router.get("/stats", async (req, res, next) => {
   try {
     const events = await getRaidHelperEvents();
-
     const guildMap = new Map();
-
     for (const event of events) {
       if (!guildMap.has(event.guild_id)) {
         guildMap.set(event.guild_id, {
@@ -73,16 +71,25 @@ router.get("/stats", async (req, res, next) => {
           raids: [],
         });
       }
-
       guildMap.get(event.guild_id).raids.push(event);
     }
-
     const groupedEvents = [...guildMap.values()];
 
-    res.json(groupedEvents);
+    const statsByWeekday = await getStatsByWeekDay();
+
+
+
+    res.json({
+      guilds: groupedEvents,
+      raidsByDay: statsByWeekday,
+    });
+
   } catch (err) {
     next(err);
   }
 });
+
+
+
 
 export default router;
