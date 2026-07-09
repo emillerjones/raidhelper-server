@@ -80,11 +80,37 @@ export async function getRaidHelperEvents() {
     `
     SELECT *
     FROM raidhelper_events
+    WHERE start_time >= CURRENT_DATE
+      AND start_time < CURRENT_DATE + INTERVAL '8 days'
     ORDER BY start_time ASC
     `
   );
 
   return rows;
+}
+
+export async function logCalendarVisit(visit) {
+  const sql = `
+    INSERT INTO calendar_visits (
+      visitor_id,
+      ip_address,
+      user_agent,
+      referer,
+      route
+    )
+    VALUES ($1,$2,$3,$4,$5)
+    RETURNING *;
+  `;
+
+  const { rows } = await db.query(sql, [
+    visit.visitorId,
+    visit.ipAddress,
+    visit.userAgent,
+    visit.referer,
+    visit.route
+  ]);
+
+  return rows[0];
 }
 
 export async function getStatsByWeekDay() {

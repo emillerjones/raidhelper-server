@@ -1,7 +1,7 @@
 import express from "express";
 const router = express.Router();
 
-import { upsertRaidHelperEvent, getRaidHelperEvents, getStatsByWeekDay } from "../db/raidhelper.js";
+import { upsertRaidHelperEvent, getRaidHelperEvents, getStatsByWeekDay, logCalendarVisit } from "../db/raidhelper.js";
 
 router.get("/events",  async (req, res, next) => {
   try {
@@ -49,6 +49,20 @@ router.post("/import",  async (req, res, next) => {
 
 router.get("/imported",  async (req, res, next) => {
   try {
+    // This is best-effort visitor tracking. If it fails, still let the
+    // calendar load normally instead of making analytics break the page.
+    try {
+      await logCalendarVisit({
+        visitorId: req.get("x-visitor-id") || null,
+        ipAddress: req.get("x-forwarded-for") || req.ip || null,
+        userAgent: req.get("user-agent") || null,
+        referer: req.get("referer") || null,
+        route: req.originalUrl,
+      });
+    } catch (visitErr) {
+      console.error("Failed to log calendar visit:", visitErr);
+    }
+
     const raids = await getRaidHelperEvents();
     console.log("Raids found:", raids.length);
     res.send(raids);
