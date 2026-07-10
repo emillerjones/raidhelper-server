@@ -74,7 +74,7 @@ export async function upsertRaidHelperEvent(raid) {
   };
 }
 
-
+//7 day range for main calendar, not for stats page
 export async function getRaidHelperEvents() {
   const { rows } = await db.query(
     `
@@ -83,6 +83,37 @@ export async function getRaidHelperEvents() {
     WHERE start_time >= CURRENT_DATE
       AND start_time < CURRENT_DATE + INTERVAL '8 days'
     ORDER BY start_time ASC
+    `
+  );
+
+  return rows;
+}
+
+//full range, minus json, for stats page
+export async function getRaidHelperStatsEvents() {
+  const { rows } = await db.query(
+    `
+    SELECT
+      raidhelper_event_id,
+      event_id,
+      softres_id,
+      guild_id,
+      guild_name,
+      guild_icon_url,
+      channel_id,
+      raid_name,
+      raid_notes,
+      raid_leader,
+      title,
+      start_time,
+      signup_count,
+      signup_max,
+      raidhelper_url,
+      softres_url,
+      created_at,
+      updated_at
+    FROM raidhelper_events
+    ORDER BY start_time DESC
     `
   );
 
@@ -200,17 +231,4 @@ export async function finishExtensionScanRun(scanRun) {
   return rows[0] || null;
 }
 
-export async function getStatsByWeekDay() {
-  const { rows } = await db.query(
-    `
-    SELECT
-      TRIM(TO_CHAR(start_time, 'Day')) AS day_of_week,
-      COUNT(*) AS event_count
-    FROM raidhelper_events
-    GROUP BY EXTRACT(DOW FROM start_time), TRIM(TO_CHAR(start_time, 'Day'))
-    ORDER BY EXTRACT(DOW FROM start_time);
-    `
-  );
 
-  return rows;
-}
