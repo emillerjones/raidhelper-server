@@ -110,6 +110,11 @@ export async function getRaidHelperStatsEvents() {
       signup_max,
       raidhelper_url,
       softres_url,
+      raw_json->>'startTime' AS raw_start_time,
+      raw_json->>'localDate' AS raw_local_date,
+      raw_json->>'localTime' AS raw_local_time,
+      raw_json->>'guildName' AS raw_guild_name,
+      raw_json->>'guildIconUrl' AS raw_guild_icon_url,
       created_at,
       updated_at
     FROM raidhelper_events
@@ -230,5 +235,4 @@ export async function finishExtensionScanRun(scanRun) {
 
   return rows[0] || null;
 }
-
 
