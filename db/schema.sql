@@ -37,9 +37,14 @@ CREATE TABLE IF NOT EXISTS calendar_visits (
   user_agent TEXT,
   referer TEXT,
   route TEXT,
+  page TEXT,
 
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Existing databases already have this table from before "page" existed;
+-- CREATE TABLE IF NOT EXISTS above is a no-op for them, so add it here too.
+ALTER TABLE calendar_visits ADD COLUMN IF NOT EXISTS page TEXT;
 
 CREATE INDEX IF NOT EXISTS calendar_visits_visitor_id_idx
 ON calendar_visits (visitor_id);

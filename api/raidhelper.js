@@ -16,6 +16,26 @@ const MAX_ERROR_TEXT_LENGTH = 500;
 const MAX_SCAN_DURATION_MS = 10_800_000;
 const MAX_SCAN_COUNT = 10_000;
 const ALLOWED_SCAN_STATUSES = new Set(["completed", "failed"]);
+const ALLOWED_VISIT_PAGES = new Set(["home", "radar", "calendar"]);
+
+// Best-effort page-visit tracking. If it fails, still let the page load
+// normally instead of making analytics break the response.
+async function trackPageVisit(req, page) {
+  if (!ALLOWED_VISIT_PAGES.has(page)) return;
+
+  try {
+    await logCalendarVisit({
+      visitorId: req.get("x-visitor-id") || null,
+      ipAddress: req.get("x-forwarded-for") || req.ip || null,
+      userAgent: req.get("user-agent") || null,
+      referer: req.get("referer") || null,
+      route: req.originalUrl,
+      page,
+    });
+  } catch (err) {
+    console.error(`Failed to log ${page} visit:`, err);
+  }
+}
 
 function asOptionalText(value, maxLength = MAX_SHORT_TEXT_LENGTH) {
   if (value === undefined || value === null || value === "") return null;
@@ -199,19 +219,7 @@ router.post("/extension-scans/:scanRunId/complete", async (req, res) => {
 
 router.get("/imported",  async (req, res, next) => {
   try {
-    // This is best-effort visitor tracking. If it fails, still let the
-    // calendar load normally instead of making analytics break the page.
-    try {
-      await logCalendarVisit({
-        visitorId: req.get("x-visitor-id") || null,
-        ipAddress: req.get("x-forwarded-for") || req.ip || null,
-        userAgent: req.get("user-agent") || null,
-        referer: req.get("referer") || null,
-        route: req.originalUrl,
-      });
-    } catch (visitErr) {
-      console.error("Failed to log calendar visit:", visitErr);
-    }
+    await trackPageVisit(req, "calendar");
 
     const raids = await getRaidHelperEvents();
     console.log("Raids found:", raids.length);
@@ -224,6 +232,8 @@ router.get("/imported",  async (req, res, next) => {
 
 router.get("/stats", async (req, res, next) => {
   try {
+    await trackPageVisit(req, req.query.page);
+
     res.json({
       raids: await getRaidHelperStatsEvents(),
     });

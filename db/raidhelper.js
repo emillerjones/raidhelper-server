@@ -132,9 +132,10 @@ export async function logCalendarVisit(visit) {
       ip_address,
       user_agent,
       referer,
-      route
+      route,
+      page
     )
-    VALUES ($1,$2,$3,$4,$5)
+    VALUES ($1,$2,$3,$4,$5,$6)
     RETURNING *;
   `;
 
@@ -143,7 +144,8 @@ export async function logCalendarVisit(visit) {
     visit.ipAddress,
     visit.userAgent,
     visit.referer,
-    visit.route
+    visit.route,
+    visit.page
   ]);
 
   return rows[0];
