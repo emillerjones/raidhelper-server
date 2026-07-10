@@ -113,6 +113,93 @@ export async function logCalendarVisit(visit) {
   return rows[0];
 }
 
+export async function getAppSetting(key, fallbackValue = null) {
+  const { rows } = await db.query(
+    `
+    SELECT setting_value
+    FROM app_settings
+    WHERE setting_key = $1
+    `,
+    [key]
+  );
+
+  return rows[0]?.setting_value ?? fallbackValue;
+}
+
+export async function isExtensionTelemetryEnabled() {
+  return (await getAppSetting("extension_telemetry_enabled", true)) === true;
+}
+
+export async function startExtensionScanRun(scanRun) {
+  const sql = `
+    INSERT INTO extension_scan_runs (
+      extension_install_id,
+      extension_version,
+      scan_type,
+      scan_mode,
+      guild_id,
+      guild_name,
+      channel_id,
+      user_agent,
+      route
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    RETURNING *;
+  `;
+
+  const { rows } = await db.query(sql, [
+    scanRun.extensionInstallId,
+    scanRun.extensionVersion,
+    scanRun.scanType,
+    scanRun.scanMode,
+    scanRun.guildId,
+    scanRun.guildName,
+    scanRun.channelId,
+    scanRun.userAgent,
+    scanRun.route
+  ]);
+
+  return rows[0];
+}
+
+export async function finishExtensionScanRun(scanRun) {
+  const sql = `
+    UPDATE extension_scan_runs
+    SET
+      status = $3,
+      server_count = $4,
+      raids_found = $5,
+      raids_imported = $6,
+      raids_updated = $7,
+      raids_failed = $8,
+      duration_ms = $9,
+      error_code = $10,
+      error_message = $11,
+      completed_at = NOW(),
+      updated_at = NOW()
+    WHERE extension_scan_run_id = $1
+      AND extension_install_id = $2
+      AND status = 'started'
+    RETURNING *;
+  `;
+
+  const { rows } = await db.query(sql, [
+    scanRun.scanRunId,
+    scanRun.extensionInstallId,
+    scanRun.status,
+    scanRun.serverCount,
+    scanRun.raidsFound,
+    scanRun.raidsImported,
+    scanRun.raidsUpdated,
+    scanRun.raidsFailed,
+    scanRun.durationMs,
+    scanRun.errorCode,
+    scanRun.errorMessage
+  ]);
+
+  return rows[0] || null;
+}
+
 export async function getStatsByWeekDay() {
   const { rows } = await db.query(
     `
