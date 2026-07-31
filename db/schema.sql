@@ -104,3 +104,35 @@ ON extension_scan_runs (extension_install_id);
 
 CREATE INDEX IF NOT EXISTS extension_scan_runs_started_at_idx
 ON extension_scan_runs (started_at);
+
+CREATE TABLE IF NOT EXISTS extension_feedback (
+  extension_feedback_id SERIAL PRIMARY KEY,
+
+  extension_install_id TEXT NOT NULL,
+  feedback_type TEXT NOT NULL,
+  message TEXT NOT NULL,
+  contact TEXT,
+
+  extension_version TEXT,
+  guild_id TEXT,
+  channel_id TEXT,
+  discord_path TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+
+  status TEXT NOT NULL DEFAULT 'new',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+
+  CHECK (feedback_type IN ('bug', 'question')),
+  CHECK (status IN ('new', 'reviewed', 'resolved'))
+);
+
+CREATE INDEX IF NOT EXISTS extension_feedback_created_at_idx
+ON extension_feedback (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS extension_feedback_install_id_idx
+ON extension_feedback (extension_install_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS extension_feedback_ip_address_idx
+ON extension_feedback (ip_address, created_at DESC);

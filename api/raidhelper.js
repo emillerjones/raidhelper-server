@@ -8,7 +8,8 @@ import {
   logCalendarVisit,
   isExtensionTelemetryEnabled,
   startExtensionScanRun,
-  finishExtensionScanRun
+  finishExtensionScanRun,
+  createExtensionFeedback
 } from "../db/raidhelper.js";
 
 const MAX_SHORT_TEXT_LENGTH = 120;
@@ -17,6 +18,9 @@ const MAX_SCAN_DURATION_MS = 10_800_000;
 const MAX_SCAN_COUNT = 10_000;
 const ALLOWED_SCAN_STATUSES = new Set(["completed", "failed"]);
 const ALLOWED_VISIT_PAGES = new Set(["home", "radar", "calendar"]);
+const ALLOWED_FEEDBACK_TYPES = new Set(["bug", "question"]);
+const MAX_FEEDBACK_MESSAGE_LENGTH = 10_000;
+const MAX_FEEDBACK_CONTACT_LENGTH = 200;
 
 // Best-effort page-visit tracking. If it fails, still let the page load
 // normally instead of making analytics break the response.
@@ -108,6 +112,29 @@ function validateExtensionScanFinish(body = {}) {
       durationMs,
       errorCode: asOptionalText(body.errorCode, 80),
       errorMessage: asOptionalText(body.errorMessage, MAX_ERROR_TEXT_LENGTH)
+    }
+  };
+}
+
+function validateExtensionFeedback(body = {}) {
+  const extensionInstallId = asRequiredText(body.extensionInstallId);
+  const feedbackType = asRequiredText(body.feedbackType, 20);
+  const message = asRequiredText(body.message, MAX_FEEDBACK_MESSAGE_LENGTH);
+
+  if (!extensionInstallId) return { error: "extensionInstallId is required" };
+  if (!ALLOWED_FEEDBACK_TYPES.has(feedbackType)) return { error: "feedbackType must be bug or question" };
+  if (!message) return { error: "message is required" };
+
+  return {
+    value: {
+      extensionInstallId,
+      feedbackType,
+      message,
+      contact: asOptionalText(body.contact, MAX_FEEDBACK_CONTACT_LENGTH),
+      extensionVersion: asOptionalText(body.extensionVersion, 40),
+      guildId: asOptionalText(body.guildId, 80),
+      channelId: asOptionalText(body.channelId, 80),
+      discordPath: asOptionalText(body.discordPath, 500)
     }
   };
 }
@@ -214,6 +241,36 @@ router.post("/extension-scans/:scanRunId/complete", async (req, res) => {
   } catch (err) {
     console.error("Failed to finish extension scan telemetry:", err);
     res.status(204).send();
+  }
+});
+
+router.post("/extension-feedback", async (req, res, next) => {
+  const validation = validateExtensionFeedback(req.body);
+  if (validation.error) {
+    return res.status(400).json({ error: validation.error });
+  }
+
+  try {
+    const forwardedFor = req.get("x-forwarded-for");
+    const ipAddress = forwardedFor?.split(",")[0]?.trim() || req.ip || null;
+    const result = await createExtensionFeedback({
+      ...validation.value,
+      ipAddress: asOptionalText(ipAddress, 120),
+      userAgent: asOptionalText(req.get("user-agent"), 500),
+    });
+
+    if (result.rateLimited) {
+      return res.status(429).json({
+        error: "Too many reports were submitted. Please try again in about an hour."
+      });
+    }
+
+    res.status(201).json({
+      message: "Thanks — your report was submitted.",
+      feedbackId: result.feedback.extension_feedback_id,
+    });
+  } catch (err) {
+    next(err);
   }
 });
 

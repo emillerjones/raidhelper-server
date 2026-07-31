@@ -238,3 +238,61 @@ export async function finishExtensionScanRun(scanRun) {
   return rows[0] || null;
 }
 
+export async function createExtensionFeedback(feedback) {
+  const { rows: rateRows } = await db.query(
+    `
+    SELECT
+      COUNT(*) FILTER (
+        WHERE extension_install_id = $1
+      )::INTEGER AS install_count,
+      COUNT(*) FILTER (
+        WHERE $2::TEXT IS NOT NULL AND ip_address = $2
+      )::INTEGER AS ip_count
+    FROM extension_feedback
+    WHERE created_at >= NOW() - INTERVAL '1 hour'
+      AND (
+        extension_install_id = $1
+        OR ($2::TEXT IS NOT NULL AND ip_address = $2)
+      )
+    `,
+    [feedback.extensionInstallId, feedback.ipAddress]
+  );
+
+  const rateCounts = rateRows[0] || {};
+  if (rateCounts.install_count >= 5 || rateCounts.ip_count >= 20) {
+    return { rateLimited: true, feedback: null };
+  }
+
+  const { rows } = await db.query(
+    `
+    INSERT INTO extension_feedback (
+      extension_install_id,
+      feedback_type,
+      message,
+      contact,
+      extension_version,
+      guild_id,
+      channel_id,
+      discord_path,
+      ip_address,
+      user_agent
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    RETURNING extension_feedback_id, feedback_type, status, created_at;
+    `,
+    [
+      feedback.extensionInstallId,
+      feedback.feedbackType,
+      feedback.message,
+      feedback.contact,
+      feedback.extensionVersion,
+      feedback.guildId,
+      feedback.channelId,
+      feedback.discordPath,
+      feedback.ipAddress,
+      feedback.userAgent
+    ]
+  );
+
+  return { rateLimited: false, feedback: rows[0] };
+}
