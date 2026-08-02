@@ -17,7 +17,14 @@ const MAX_ERROR_TEXT_LENGTH = 500;
 const MAX_SCAN_DURATION_MS = 10_800_000;
 const MAX_SCAN_COUNT = 10_000;
 const ALLOWED_SCAN_STATUSES = new Set(["completed", "failed"]);
-const ALLOWED_VISIT_PAGES = new Set(["home", "radar", "calendar"]);
+const ALLOWED_VISIT_PAGES = new Set([
+  "home",
+  "radar",
+  "calendar",
+  "portfolio_home",
+  "portfolio_story",
+  "portfolio_projects",
+]);
 const ALLOWED_FEEDBACK_TYPES = new Set(["bug", "question"]);
 const MAX_FEEDBACK_MESSAGE_LENGTH = 10_000;
 const MAX_FEEDBACK_CONTACT_LENGTH = 200;
@@ -298,6 +305,13 @@ router.get("/stats", async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+// Receives lightweight page views from the separate EMJ Portfolio frontend.
+// Database credentials remain here on the server and are never sent to Vercel.
+router.post("/visit", async (req, res) => {
+  await trackPageVisit(req, req.body?.page);
+  res.status(204).end();
 });
 
 
