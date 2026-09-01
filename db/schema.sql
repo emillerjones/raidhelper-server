@@ -136,3 +136,6 @@ ON extension_feedback (extension_install_id, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS extension_feedback_ip_address_idx
 ON extension_feedback (ip_address, created_at DESC);
+
+-- Keep fresh databases in sync with the isolated Smartish Import feature.
+\ir migrations/001_add_smartish_import.sql

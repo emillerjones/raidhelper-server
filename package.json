@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "node --watch --env-file=.env server.js",
     "db:schema": "node --env-file=.env -e \"import('child_process').then(({execSync})=>execSync('psql -f db/schema.sql \\\"' + process.env.DATABASE_URL + '\\\"', {stdio:'inherit'}))\"",
-    "db:reset": "npm run db:schema"
+    "db:reset": "npm run db:schema",
+    "test:smartish": "node --test test/smartishCsv.test.js"
   },
   "repository": {
     "type": "git",
@@ -24,8 +25,11 @@
   "homepage": "https://github.com/emillerjones/raidhelper-server#readme",
   "dependencies": {
     "cors": "^2.8.6",
+    "csv-parse": "^7.0.2",
     "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
+    "multer": "^2.3.0",
     "pg": "^8.22.0"
   },
   "devDependencies": {

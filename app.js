@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import raidhelperRouter from "./api/raidhelper.js";
+import smartishImportRouter from "./api/smartishImport.js";
 
 const app = express();
 
@@ -12,5 +13,6 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/raidhelper", raidhelperRouter);
+app.use("/api/smartish-import", smartishImportRouter);
 
 export default app;
