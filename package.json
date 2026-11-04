@@ -1,7 +1,7 @@
 {
   "name": "raidhelper-server",
   "version": "1.0.0",
-  "description": "RaidHelper - Server Repo\r //EMJ Initial set up\r Git Hub - Create Repo\r cd raidhelper-server\r npm init -y\r npm install express cors pg dotenv\r npm install --save-dev nodemon",
+  "description": "API server for Horizon, a shared raid calendar built from the Raid-Helper posts guilds already make in Discord.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
