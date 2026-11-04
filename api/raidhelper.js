@@ -5,6 +5,7 @@ import {
   upsertRaidHelperEvent,
   getRaidHelperEvents,
   getRaidHelperStatsEvents,
+  getRaidHelperSummary,
   logCalendarVisit,
   isExtensionTelemetryEnabled,
   startExtensionScanRun,
@@ -293,6 +294,31 @@ router.get("/imported",  async (req, res, next) => {
   }
 });
 
+// Public aggregate counts, cached briefly so repeated page loads don't each
+// hit the database. Unlike /stats, this does not record a visit.
+const SUMMARY_TTL_MS = 5 * 60 * 1000;
+let summaryCache = null;
+
+router.get("/summary", async (req, res, next) => {
+  try {
+    if (!summaryCache || Date.now() - summaryCache.at > SUMMARY_TTL_MS) {
+      const summary = await getRaidHelperSummary();
+      summaryCache = {
+        at: Date.now(),
+        body: {
+          raids: summary.raids,
+          guilds: summary.guilds,
+          upcomingWeek: summary.upcoming_week,
+          updatedAt: new Date().toISOString(),
+        },
+      };
+    }
+    res.set("Cache-Control", "public, max-age=300");
+    res.json(summaryCache.body);
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.get("/stats", async (req, res, next) => {
   try {

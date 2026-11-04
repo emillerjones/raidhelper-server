@@ -125,6 +125,21 @@ export async function getRaidHelperStatsEvents() {
   return rows;
 }
 
+// Aggregate counts only, for public "live" figures such as the portfolio
+// home page. Returns no event, guild, or visitor details.
+export async function getRaidHelperSummary() {
+  const { rows } = await db.query(`
+    SELECT
+      COUNT(*)::int AS raids,
+      COUNT(DISTINCT guild_id)::int AS guilds,
+      COUNT(*) FILTER (
+        WHERE start_time >= NOW() AND start_time < NOW() + INTERVAL '7 days'
+      )::int AS upcoming_week
+    FROM raidhelper_events
+  `);
+  return rows[0];
+}
+
 export async function logCalendarVisit(visit) {
   const sql = `
     INSERT INTO calendar_visits (
